@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  padding: 0;
+
+}
+
+.contenedor {
+  max-width: 950px;
+  margin: 50px auto;
+  padding: 20px;
+}
+
+.tabla-reglas {
+  width: 100%;
+  border: 1px solid blue;
+}
+
+.tabla-reglas th,
+.tabla-reglas td {
+ padding: 14px;
+ text-align: center;
+ border-bottom: 1px solid #eee;
+}
+
+.tabla-reglas th {
+  background: lightblue;
+  color: #555
+
+}
+
+.tabla-reglas td  {
+ font-size: 14px;
+}
