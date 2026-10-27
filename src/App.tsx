@@ -1,13 +1,5 @@
-import { RulesLists } from "./pages/RulesLists"
+import { RulesTable } from './components/RulesTable';
 
-function App() {
-
-  return (
-    <>
-
-      <RulesLists/>
-    </>
-  )
+export default function App() {
+  return <RulesTable />;
 }
-
-export default App
