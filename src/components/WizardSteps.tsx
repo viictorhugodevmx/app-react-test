@@ -26,13 +26,14 @@ export function WizardSteps({
               aria-current={
                 currentStep === step.number ? 'step' : undefined
               }
-              className={`w-full cursor-pointer rounded-lg px-2 py-3 text-sm font-medium transition-colors ${
+              className={`flex min-h-14 w-full cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-2 text-center text-xs font-medium transition-colors sm:min-h-0 sm:flex-row sm:gap-1 sm:px-2 sm:py-3 sm:text-sm ${
                 currentStep === step.number
                   ? 'bg-blue-600 text-white'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {step.number}. {step.label}
+              <span>{step.number}.</span>
+              <span>{step.label}</span>
             </button>
           </li>
         ))}
