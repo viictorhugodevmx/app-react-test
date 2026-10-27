@@ -1,122 +1,85 @@
-import { useState } from "react"
+import { useState } from 'react';
 
-export const RulesLists = () => {
-  //Estados para pasos, editor y adicional manejo de errores
+type Rule = {
+  id: number;
+  name: string;
+  trigger: string;
+  isActive: boolean;
+};
 
-  const  [reglas, setReglas] = useState([
-    {id: 1, nombre: 'Bienvenida', disparador: "Cliente creado", activa: true },
-    {id: 2,  nombre: 'Confirmar pago', disparador: "Pago recibido", activa: true},
-    {id: 3, nombre: 'Ticket pendiente', disparador: "Ticket sin respuesta", activa: true }
-  ])
+const initialRules: Rule[] = [
+  {
+    id: 1,
+    name: 'Bienvenida',
+    trigger: 'Cliente creado',
+    isActive: true,
+  },
+  {
+    id: 2,
+    name: 'Confirmar pago',
+    trigger: 'Pago recibido',
+    isActive: true,
+  },
+  {
+    id: 3,
+    name: 'Ticket pendiente',
+    trigger: 'Ticket sin respuesta',
+    isActive: false,
+  },
+];
 
-  const [editor, setEditor] = useState(null)
-  const [paso, setPaso] = useState(1)
+export function RulesLists() {
+  const [rules, setRules] = useState<Rule[]>(initialRules);
 
-  const [error, setError] = useState('')
-
-
-  //Actualizar
-  const actualizar = (cambios) => {
-    setEditor((prev) => prev ? {...prev, ...cambios} : null)
-    // Aqui se deberia manejar el error
-    setError('')
-  }
-  
-  // Manejo de condicion dinamica 
-  const agregarCondicion = () => {
-    if(!editor) return
-
-
-  }
-
-
-
-  // Manejo de abrir Editor
-
-
-  // Manejo del cambio de disparador
-
-
-
-
-
-  const cambiarEstado = (id: number) => {
-    setReglas((previa) => 
-      previa.map((regla) => 
-        regla.id === id ? 
-        {...regla, activa: !regla.activa} 
-        : regla
+  const toggleRuleStatus = (ruleId: number) => {
+    setRules((currentRules) =>
+      currentRules.map((rule) =>
+        rule.id === ruleId
+          ? { ...rule, isActive: !rule.isActive }
+          : rule
       )
-
-    )
-  }
-
-
-
-
-
-
+    );
+  };
 
   return (
-    <main className="contenedor">               
-      <h1>Administrador/Listado de Reglas</h1>
-      <hr />
+    <main className="contenedor">
+      <header>
+        <h1>Administrador de reglas</h1>
+        <p>Consulta y administra las reglas de notificación.</p>
+      </header>
 
-      <section>
-        <button>
-          Nueva Regla 
-        </button>
-      </section>
+      <section aria-labelledby="rules-title">
+        <h2 id="rules-title">Listado de reglas</h2>
 
-      <section className="card">
         <table className="tabla-reglas">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>Disparador</th>
-              <th>Activa</th>
-
+              <th scope="col">Nombre</th>
+              <th scope="col">Disparador</th>
+              <th scope="col">Estado</th>
             </tr>
-
-            <tbody>
-              {
-                reglas.map(regla => (
-                  <tr>
-                    <td>{regla.nombre}</td>
-                    <td>{regla.disparador}</td>
-                    <td><input type="checkbox" checked={regla.activa}  onChange={() => cambiarEstado(regla.id)}/></td>
-                  </tr>
-                ))
-              }
-            </tbody>
           </thead>
+
+          <tbody>
+            {rules.map((rule) => (
+              <tr key={rule.id}>
+                <td>{rule.name}</td>
+                <td>{rule.trigger}</td>
+                <td>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={rule.isActive}
+                      onChange={() => toggleRuleStatus(rule.id)}
+                    />
+                    {rule.isActive ? 'Activa' : 'Inactiva'}
+                  </label>
+                </td>
+              </tr>
+            ))}
+          </tbody>
         </table>
       </section>
-
-
-      <section>
-        <h2>Editor de regla</h2>
-
-        <div>
-          <button>
-            Paso X
-          </button>
-        </div>
-      </section>
-
-
-      <div>
-        <h2>Disparador</h2>
-
-        <label htmlFor="nombreregla">Nombre de la regla</label>
-
-        <input type="text" />
-
-        <select>
-          
-        </select>
-
-      </div>
     </main>
-  )
+  );
 }
