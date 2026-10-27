@@ -3,11 +3,15 @@ import { SmsActionFields } from './SmsActionFields';
 import { WebhookActionFields } from './WebhookActionFields';
 
 import type { RuleAction } from '../types/rule';
+import type { ActionErrors } from '../utils/ruleValidation';
 
 type ActionType = RuleAction['type'];
 
 type ActionsStepProps = {
   actions: RuleAction[];
+  actionErrors: ActionErrors;
+  actionsError: string | null;
+  isActionsValidated: boolean;
   onAddAction: () => void;
   onRemoveAction: (actionId: string) => void;
   onActionTypeChange: (
@@ -28,11 +32,16 @@ const actionTypeOptions: {
 
 export function ActionsStep({
   actions,
+  actionErrors,
+  actionsError,
+  isActionsValidated,
   onAddAction,
   onRemoveAction,
   onActionTypeChange,
   onActionChange,
 }: ActionsStepProps) {
+  const hasFieldErrors = Object.keys(actionErrors).length > 0;
+
   return (
     <section aria-labelledby="actions-title">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -74,6 +83,7 @@ export function ActionsStep({
         <div className="mt-6 space-y-4">
           {actions.map((action, index) => {
             const actionTypeId = `action-type-${action.id}`;
+            const errors = actionErrors[action.id];
 
             return (
               <div
@@ -115,10 +125,7 @@ export function ActionsStep({
                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm focus:border-blue-500 focus:outline-none sm:max-w-sm"
                   >
                     {actionTypeOptions.map((option) => (
-                      <option
-                        key={option.value}
-                        value={option.value}
-                      >
+                      <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
                     ))}
@@ -129,6 +136,7 @@ export function ActionsStep({
                   {action.type === 'email' && (
                     <EmailActionFields
                       action={action}
+                      errors={errors}
                       onChange={onActionChange}
                     />
                   )}
@@ -136,6 +144,7 @@ export function ActionsStep({
                   {action.type === 'sms' && (
                     <SmsActionFields
                       action={action}
+                      errors={errors}
                       onChange={onActionChange}
                     />
                   )}
@@ -143,6 +152,7 @@ export function ActionsStep({
                   {action.type === 'webhook' && (
                     <WebhookActionFields
                       action={action}
+                      errors={errors}
                       onChange={onActionChange}
                     />
                   )}
@@ -156,6 +166,24 @@ export function ActionsStep({
       <p className="mt-4 text-xs text-slate-500">
         Acciones configuradas: {actions.length}
       </p>
+
+      {actionsError && (
+        <p role="alert" className="mt-3 text-sm text-red-600">
+          {actionsError}
+        </p>
+      )}
+
+      {hasFieldErrors && (
+        <p role="alert" className="mt-3 text-sm text-red-600">
+          Revisa los campos marcados antes de continuar.
+        </p>
+      )}
+
+      {isActionsValidated && (
+        <p role="status" className="mt-3 text-sm text-green-700">
+          Todas las acciones están correctamente configuradas.
+        </p>
+      )}
     </section>
   );
 }

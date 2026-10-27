@@ -1,7 +1,9 @@
 import type { SmsAction } from '../types/rule';
+import type { ActionFieldErrors } from '../utils/ruleValidation';
 
 type SmsActionFieldsProps = {
   action: SmsAction;
+  errors?: ActionFieldErrors;
   onChange: (updatedAction: SmsAction) => void;
 };
 
@@ -9,6 +11,7 @@ const MAX_SMS_LENGTH = 160;
 
 export function SmsActionFields({
   action,
+  errors,
   onChange,
 }: SmsActionFieldsProps) {
   const phoneNumberId = `sms-phone-${action.id}`;
@@ -34,6 +37,12 @@ export function SmsActionFields({
           type="tel"
           autoComplete="tel"
           value={action.phoneNumber}
+          aria-invalid={Boolean(errors?.phoneNumber)}
+          aria-describedby={
+            errors?.phoneNumber
+              ? `${phoneNumberId}-error`
+              : undefined
+          }
           onChange={(event) =>
             onChange({
               ...action,
@@ -41,12 +50,26 @@ export function SmsActionFields({
             })
           }
           placeholder="+52 961 123 4567"
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none focus:ring-2 ${
+            errors?.phoneNumber
+              ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+              : 'border-slate-300 focus:border-blue-500 focus:ring-blue-100'
+          }`}
         />
 
-        <p className="mt-2 text-xs text-slate-500">
-          Incluye el código de país.
-        </p>
+        {errors?.phoneNumber ? (
+          <p
+            id={`${phoneNumberId}-error`}
+            role="alert"
+            className="mt-2 text-sm text-red-600"
+          >
+            {errors.phoneNumber}
+          </p>
+        ) : (
+          <p className="mt-2 text-xs text-slate-500">
+            Incluye el código de país.
+          </p>
+        )}
       </div>
 
       <div>
@@ -62,8 +85,13 @@ export function SmsActionFields({
           name={messageId}
           rows={4}
           maxLength={MAX_SMS_LENGTH}
-          aria-describedby={counterId}
           value={action.message}
+          aria-invalid={Boolean(errors?.message)}
+          aria-describedby={
+            errors?.message
+              ? `${counterId} ${messageId}-error`
+              : counterId
+          }
           onChange={(event) =>
             onChange({
               ...action,
@@ -74,8 +102,22 @@ export function SmsActionFields({
             })
           }
           placeholder="Escribe el mensaje de notificación..."
-          className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          className={`w-full resize-y rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none focus:ring-2 ${
+            errors?.message
+              ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+              : 'border-slate-300 focus:border-blue-500 focus:ring-blue-100'
+          }`}
         />
+
+        {errors?.message && (
+          <p
+            id={`${messageId}-error`}
+            role="alert"
+            className="mt-2 text-sm text-red-600"
+          >
+            {errors.message}
+          </p>
+        )}
 
         <div
           id={counterId}

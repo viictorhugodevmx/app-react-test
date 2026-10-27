@@ -4,12 +4,24 @@ import { WizardSteps } from './WizardSteps';
 import { TriggerStep } from './TriggerStep';
 import { ConditionsStep } from './ConditionsStep';
 import { ActionsStep } from './ActionsStep';
+
 import { triggerOptions } from '../config/ruleOptions';
+
+import {
+  validateRuleName,
+  validateConditions,
+  validateActions,
+} from '../utils/ruleValidation';
+
+import type {
+  ActionErrors,
+  ConditionErrors,
+} from '../utils/ruleValidation';
 
 import type { WizardStep } from './WizardSteps';
 
 import type {
-  RuleSummary,
+  Rule,
   Trigger,
   Condition,
   ConditionLogic,
@@ -17,8 +29,9 @@ import type {
 } from '../types/rule';
 
 type RuleEditorProps = {
-  rule?: RuleSummary;
+  rule?: Rule;
   onBack: () => void;
+  onSave: (updatedRule: Rule) => string | null;
 };
 
 type MoveDirection = 'up' | 'down';
@@ -56,21 +69,75 @@ function createAction(
   }
 }
 
-export function RuleEditor({ rule, onBack }: RuleEditorProps) {
+export function RuleEditor({
+  rule,
+  onBack,
+  onSave,
+}: RuleEditorProps) {
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
 
   const [name, setName] = useState(rule?.name ?? '');
+
+  const [nameError, setNameError] =
+    useState<string | null>(null);
 
   const [trigger, setTrigger] = useState<Trigger>(
     rule?.trigger ?? 'customer_created'
   );
 
-  const [conditions, setConditions] = useState<Condition[]>([]);
+  const [conditions, setConditions] = useState<Condition[]>(
+    () =>
+      rule?.conditions.map((condition) => ({
+        ...condition,
+      })) ?? []
+  );
+
+  const [conditionErrors, setConditionErrors] =
+    useState<ConditionErrors>({});
 
   const [conditionLogic, setConditionLogic] =
-    useState<ConditionLogic>('AND');
+    useState<ConditionLogic>(
+      rule?.conditionLogic ?? 'AND'
+    );
 
-  const [actions, setActions] = useState<RuleAction[]>([]);
+  const [actions, setActions] = useState<RuleAction[]>(
+    () =>
+      rule?.actions.map((action) => ({
+        ...action,
+      })) ?? []
+  );
+
+  const [actionErrors, setActionErrors] =
+    useState<ActionErrors>({});
+
+  const [actionsError, setActionsError] =
+    useState<string | null>(null);
+
+  const [isActionsValidated, setIsActionsValidated] =
+    useState(false);
+
+  const clearConditionError = (conditionId: string) => {
+    setConditionErrors((currentErrors) => {
+      const nextErrors = { ...currentErrors };
+      delete nextErrors[conditionId];
+      return nextErrors;
+    });
+  };
+
+  const clearActionError = (actionId: string) => {
+    setActionErrors((currentErrors) => {
+      const nextErrors = { ...currentErrors };
+      delete nextErrors[actionId];
+      return nextErrors;
+    });
+
+    setIsActionsValidated(false);
+  };
+
+  const changeName = (newName: string) => {
+    setName(newName);
+    setNameError(null);
+  };
 
   const changeTrigger = (newTrigger: Trigger) => {
     if (newTrigger === trigger) {
@@ -89,6 +156,7 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
 
     setTrigger(newTrigger);
     setConditions([]);
+    setConditionErrors({});
     setConditionLogic('AND');
   };
 
@@ -112,6 +180,8 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
         (condition) => condition.id !== conditionId
       )
     );
+
+    clearConditionError(conditionId);
   };
 
   const updateCondition = (
@@ -125,6 +195,8 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
           : condition
       )
     );
+
+    clearConditionError(conditionId);
   };
 
   const moveCondition = (
@@ -172,12 +244,13 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
   };
 
   const addAction = () => {
-    const newAction = createAction('email');
-
     setActions((currentActions) => [
       ...currentActions,
-      newAction,
+      createAction('email'),
     ]);
+
+    setActionsError(null);
+    setIsActionsValidated(false);
   };
 
   const removeAction = (actionId: string) => {
@@ -186,6 +259,9 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
         (action) => action.id !== actionId
       )
     );
+
+    clearActionError(actionId);
+    setActionsError(null);
   };
 
   const changeActionType = (
@@ -199,6 +275,8 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
           : action
       )
     );
+
+    clearActionError(actionId);
   };
 
   const updateAction = (updatedAction: RuleAction) => {
@@ -210,14 +288,114 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
           : action
       )
     );
+
+    clearActionError(updatedAction.id);
+  };
+
+  const validateActionDraft = (): boolean => {
+    const validationResult = validateActions(actions);
+
+    setActionErrors(validationResult.actionErrors);
+    setActionsError(validationResult.actionsError);
+
+    const isValid =
+      validationResult.actionsError === null &&
+      Object.keys(validationResult.actionErrors).length === 0;
+
+    setIsActionsValidated(isValid);
+
+    return isValid;
+  };
+
+  const changeWizardStep = (nextStep: WizardStep) => {
+    if (nextStep > 1) {
+      const validationError = validateRuleName(name);
+
+      if (validationError) {
+        setNameError(validationError);
+        setCurrentStep(1);
+        return;
+      }
+    }
+
+    if (nextStep === 3) {
+      const validationErrors = validateConditions(
+        conditions,
+        trigger
+      );
+
+      setConditionErrors(validationErrors);
+
+      if (Object.keys(validationErrors).length > 0) {
+        setCurrentStep(2);
+        return;
+      }
+    }
+
+    setCurrentStep(nextStep);
   };
 
   const goToNextStep = () => {
-    setCurrentStep((step) => (step === 1 ? 2 : 3));
+    const nextStep: WizardStep =
+      currentStep === 1 ? 2 : 3;
+
+    changeWizardStep(nextStep);
   };
 
   const goToPreviousStep = () => {
-    setCurrentStep((step) => (step === 3 ? 2 : 1));
+    const previousStep: WizardStep =
+      currentStep === 3 ? 2 : 1;
+
+    changeWizardStep(previousStep);
+  };
+
+  const saveRule = () => {
+    const validationError = validateRuleName(name);
+
+    setNameError(validationError);
+
+    if (validationError) {
+      setCurrentStep(1);
+      return;
+    }
+
+    const validationErrors = validateConditions(
+      conditions,
+      trigger
+    );
+
+    setConditionErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setCurrentStep(2);
+      return;
+    }
+
+    if (!validateActionDraft()) {
+      setCurrentStep(3);
+      return;
+    }
+
+    const updatedRule: Rule = {
+      id: rule?.id ?? crypto.randomUUID(),
+      name: name.trim(),
+      trigger,
+      isActive: rule?.isActive ?? true,
+      conditionLogic,
+      conditions: conditions.map((condition) => ({
+        ...condition,
+      })),
+      actions: actions.map((action) => ({
+        ...action,
+      })),
+    };
+
+    const saveError = onSave(updatedRule);
+
+    if (saveError) {
+      setNameError(saveError);
+      setCurrentStep(1);
+    }
   };
 
   return (
@@ -244,15 +422,16 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <WizardSteps
             currentStep={currentStep}
-            onStepChange={setCurrentStep}
+            onStepChange={changeWizardStep}
           />
 
           <div className="min-h-48">
             {currentStep === 1 && (
               <TriggerStep
                 name={name}
+                nameError={nameError}
                 trigger={trigger}
-                onNameChange={setName}
+                onNameChange={changeName}
                 onTriggerChange={changeTrigger}
               />
             )}
@@ -262,6 +441,7 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
                 trigger={trigger}
                 conditions={conditions}
                 conditionLogic={conditionLogic}
+                conditionErrors={conditionErrors}
                 onLogicChange={setConditionLogic}
                 onAddCondition={addCondition}
                 onRemoveCondition={removeCondition}
@@ -273,6 +453,9 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
             {currentStep === 3 && (
               <ActionsStep
                 actions={actions}
+                actionErrors={actionErrors}
+                actionsError={actionsError}
+                isActionsValidated={isActionsValidated}
                 onAddAction={addAction}
                 onRemoveAction={removeAction}
                 onActionTypeChange={changeActionType}
@@ -281,7 +464,7 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
             )}
           </div>
 
-          <footer className="mt-8 flex items-center justify-between border-t border-slate-200 pt-5">
+          <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
             <button
               type="button"
               onClick={goToPreviousStep}
@@ -291,14 +474,33 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
               Anterior
             </button>
 
-            <button
-              type="button"
-              onClick={goToNextStep}
-              disabled={currentStep === 3}
-              className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Siguiente
-            </button>
+            {currentStep === 3 ? (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={validateActionDraft}
+                  className="cursor-pointer rounded-lg border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                >
+                  Validar acciones
+                </button>
+
+                <button
+                  type="button"
+                  onClick={saveRule}
+                  className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Guardar regla
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={goToNextStep}
+                className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Siguiente
+              </button>
+            )}
           </footer>
         </section>
       </div>

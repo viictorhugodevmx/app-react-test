@@ -7,12 +7,15 @@ import type {
   Trigger,
 } from '../types/rule';
 
+import type { ConditionErrors } from '../utils/ruleValidation';
+
 type MoveDirection = 'up' | 'down';
 
 type ConditionsStepProps = {
   trigger: Trigger;
   conditions: Condition[];
   conditionLogic: ConditionLogic;
+  conditionErrors: ConditionErrors;
   onLogicChange: (logic: ConditionLogic) => void;
   onAddCondition: () => void;
   onRemoveCondition: (conditionId: string) => void;
@@ -30,6 +33,7 @@ export function ConditionsStep({
   trigger,
   conditions,
   conditionLogic,
+  conditionErrors,
   onLogicChange,
   onAddCondition,
   onRemoveCondition,
@@ -81,6 +85,7 @@ export function ConditionsStep({
 
         <select
           id="condition-logic"
+          name="condition-logic"
           value={conditionLogic}
           onChange={(event) =>
             onLogicChange(event.target.value as ConditionLogic)
@@ -130,6 +135,9 @@ export function ConditionsStep({
             const fieldId = `condition-field-${condition.id}`;
             const operatorId = `condition-operator-${condition.id}`;
             const valueId = `condition-value-${condition.id}`;
+            const errorId = `condition-error-${condition.id}`;
+
+            const conditionError = conditionErrors[condition.id];
 
             const isFirstCondition = index === 0;
             const isLastCondition = index === conditions.length - 1;
@@ -192,6 +200,7 @@ export function ConditionsStep({
 
                     <select
                       id={fieldId}
+                      name={fieldId}
                       value={condition.field}
                       onChange={(event) =>
                         changeField(
@@ -222,11 +231,11 @@ export function ConditionsStep({
 
                     <select
                       id={operatorId}
+                      name={operatorId}
                       value={condition.operator}
                       onChange={(event) =>
                         onConditionChange(condition.id, {
-                          operator: event.target
-                            .value as ConditionOperator,
+                          operator: event.target.value as ConditionOperator,
                         })
                       }
                       className="w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm focus:border-blue-500 focus:outline-none"
@@ -252,6 +261,7 @@ export function ConditionsStep({
 
                     <input
                       id={valueId}
+                      name={valueId}
                       type={selectedField.type}
                       step={
                         selectedField.type === 'number'
@@ -259,6 +269,10 @@ export function ConditionsStep({
                           : undefined
                       }
                       value={condition.value}
+                      aria-invalid={Boolean(conditionError)}
+                      aria-describedby={
+                        conditionError ? errorId : undefined
+                      }
                       onChange={(event) => {
                         const newValue =
                           selectedField.type === 'number' &&
@@ -271,10 +285,24 @@ export function ConditionsStep({
                         });
                       }}
                       placeholder="Ingresa un valor"
-                      className="w-full rounded-lg border border-slate-300 px-3 py-3 text-sm focus:border-blue-500 focus:outline-none"
+                      className={`w-full rounded-lg border px-3 py-3 text-sm focus:outline-none ${
+                        conditionError
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-slate-300 focus:border-blue-500'
+                      }`}
                     />
                   </div>
                 </div>
+
+                {conditionError && (
+                  <p
+                    id={errorId}
+                    role="alert"
+                    className="mt-3 text-sm text-red-600"
+                  >
+                    {conditionError}
+                  </p>
+                )}
               </div>
             );
           })}

@@ -1,17 +1,27 @@
 import type { EmailAction } from '../types/rule';
+import type { ActionFieldErrors } from '../utils/ruleValidation';
 
 type EmailActionFieldsProps = {
   action: EmailAction;
+  errors?: ActionFieldErrors;
   onChange: (updatedAction: EmailAction) => void;
 };
 
 export function EmailActionFields({
   action,
+  errors,
   onChange,
 }: EmailActionFieldsProps) {
   const recipientId = `email-recipient-${action.id}`;
   const subjectId = `email-subject-${action.id}`;
   const bodyId = `email-body-${action.id}`;
+
+  const inputClassName = (hasError: boolean) =>
+    `w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none focus:ring-2 ${
+      hasError
+        ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+        : 'border-slate-300 focus:border-blue-500 focus:ring-blue-100'
+    }`;
 
   return (
     <div className="space-y-5">
@@ -29,6 +39,10 @@ export function EmailActionFields({
           type="email"
           autoComplete="email"
           value={action.recipient}
+          aria-invalid={Boolean(errors?.recipient)}
+          aria-describedby={
+            errors?.recipient ? `${recipientId}-error` : undefined
+          }
           onChange={(event) =>
             onChange({
               ...action,
@@ -36,8 +50,18 @@ export function EmailActionFields({
             })
           }
           placeholder="destinatario@ejemplo.com"
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          className={inputClassName(Boolean(errors?.recipient))}
         />
+
+        {errors?.recipient && (
+          <p
+            id={`${recipientId}-error`}
+            role="alert"
+            className="mt-2 text-sm text-red-600"
+          >
+            {errors.recipient}
+          </p>
+        )}
       </div>
 
       <div>
@@ -53,6 +77,10 @@ export function EmailActionFields({
           name={subjectId}
           type="text"
           value={action.subject}
+          aria-invalid={Boolean(errors?.subject)}
+          aria-describedby={
+            errors?.subject ? `${subjectId}-error` : undefined
+          }
           onChange={(event) =>
             onChange({
               ...action,
@@ -60,8 +88,18 @@ export function EmailActionFields({
             })
           }
           placeholder="Ej. Confirmación de pago"
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          className={inputClassName(Boolean(errors?.subject))}
         />
+
+        {errors?.subject && (
+          <p
+            id={`${subjectId}-error`}
+            role="alert"
+            className="mt-2 text-sm text-red-600"
+          >
+            {errors.subject}
+          </p>
+        )}
       </div>
 
       <div>
@@ -77,6 +115,10 @@ export function EmailActionFields({
           name={bodyId}
           rows={5}
           value={action.body}
+          aria-invalid={Boolean(errors?.body)}
+          aria-describedby={
+            errors?.body ? `${bodyId}-error` : undefined
+          }
           onChange={(event) =>
             onChange({
               ...action,
@@ -84,8 +126,18 @@ export function EmailActionFields({
             })
           }
           placeholder="Escribe el contenido del correo..."
-          className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          className={`${inputClassName(Boolean(errors?.body))} resize-y`}
         />
+
+        {errors?.body && (
+          <p
+            id={`${bodyId}-error`}
+            role="alert"
+            className="mt-2 text-sm text-red-600"
+          >
+            {errors.body}
+          </p>
+        )}
       </div>
     </div>
   );

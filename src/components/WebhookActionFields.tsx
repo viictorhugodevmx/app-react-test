@@ -1,12 +1,15 @@
 import type { WebhookAction } from '../types/rule';
+import type { ActionFieldErrors } from '../utils/ruleValidation';
 
 type WebhookActionFieldsProps = {
   action: WebhookAction;
+  errors?: ActionFieldErrors;
   onChange: (updatedAction: WebhookAction) => void;
 };
 
 export function WebhookActionFields({
   action,
+  errors,
   onChange,
 }: WebhookActionFieldsProps) {
   const urlId = `webhook-url-${action.id}`;
@@ -28,6 +31,10 @@ export function WebhookActionFields({
           type="url"
           autoComplete="url"
           value={action.url}
+          aria-invalid={Boolean(errors?.url)}
+          aria-describedby={
+            errors?.url ? `${urlId}-error` : undefined
+          }
           onChange={(event) =>
             onChange({
               ...action,
@@ -35,12 +42,26 @@ export function WebhookActionFields({
             })
           }
           placeholder="https://api.ejemplo.com/webhook"
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none focus:ring-2 ${
+            errors?.url
+              ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+              : 'border-slate-300 focus:border-blue-500 focus:ring-blue-100'
+          }`}
         />
 
-        <p className="mt-2 text-xs text-slate-500">
-          Utiliza una dirección HTTP o HTTPS.
-        </p>
+        {errors?.url ? (
+          <p
+            id={`${urlId}-error`}
+            role="alert"
+            className="mt-2 text-sm text-red-600"
+          >
+            {errors.url}
+          </p>
+        ) : (
+          <p className="mt-2 text-xs text-slate-500">
+            Utiliza una dirección HTTP o HTTPS.
+          </p>
+        )}
       </div>
 
       <div>
@@ -55,22 +76,40 @@ export function WebhookActionFields({
           id={methodId}
           name={methodId}
           value={action.method}
+          aria-invalid={Boolean(errors?.method)}
+          aria-describedby={
+            errors?.method ? `${methodId}-error` : undefined
+          }
           onChange={(event) =>
             onChange({
               ...action,
               method: event.target.value as WebhookAction['method'],
             })
           }
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 sm:max-w-sm"
+          className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none focus:ring-2 sm:max-w-sm ${
+            errors?.method
+              ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+              : 'border-slate-300 focus:border-blue-500 focus:ring-blue-100'
+          }`}
         >
           <option value="POST">POST</option>
           <option value="PUT">PUT</option>
         </select>
 
-        <p className="mt-2 text-xs text-slate-500">
-          Selecciona cómo se enviará la solicitud
-          al endpoint configurado.
-        </p>
+        {errors?.method ? (
+          <p
+            id={`${methodId}-error`}
+            role="alert"
+            className="mt-2 text-sm text-red-600"
+          >
+            {errors.method}
+          </p>
+        ) : (
+          <p className="mt-2 text-xs text-slate-500">
+            Selecciona cómo se enviará la solicitud
+            al endpoint configurado.
+          </p>
+        )}
       </div>
     </div>
   );

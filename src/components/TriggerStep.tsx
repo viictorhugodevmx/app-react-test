@@ -4,6 +4,7 @@ import type { Trigger } from '../types/rule';
 type TriggerStepProps = {
   name: string;
   trigger: Trigger;
+  nameError: string | null;
   onNameChange: (name: string) => void;
   onTriggerChange: (trigger: Trigger) => void;
 };
@@ -11,6 +12,7 @@ type TriggerStepProps = {
 export function TriggerStep({
   name,
   trigger,
+  nameError,
   onNameChange,
   onTriggerChange,
 }: TriggerStepProps) {
@@ -31,16 +33,38 @@ export function TriggerStep({
             className="mb-2 block text-sm font-medium"
           >
             Nombre de la regla
+            <span className="ml-1 text-red-600">*</span>
           </label>
 
           <input
             id="rule-name"
+            name="rule-name"
             type="text"
             value={name}
-            onChange={(event) => onNameChange(event.target.value)}
+            onChange={(event) =>
+              onNameChange(event.target.value)
+            }
+            aria-invalid={Boolean(nameError)}
+            aria-describedby={
+              nameError ? 'rule-name-error' : undefined
+            }
             placeholder="Ej. Notificar pagos importantes"
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            className={`w-full rounded-lg border px-4 py-3 text-sm outline-none focus:ring-2 ${
+              nameError
+                ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+                : 'border-slate-300 focus:border-blue-500 focus:ring-blue-100'
+            }`}
           />
+
+          {nameError && (
+            <p
+              id="rule-name-error"
+              role="alert"
+              className="mt-2 text-sm text-red-600"
+            >
+              {nameError}
+            </p>
+          )}
         </div>
 
         <div>
@@ -53,17 +77,20 @@ export function TriggerStep({
 
           <select
             id="rule-trigger"
+            name="rule-trigger"
             value={trigger}
             onChange={(event) =>
               onTriggerChange(event.target.value as Trigger)
             }
             className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           >
-            {Object.entries(triggerOptions).map(([value, option]) => (
-              <option key={value} value={value}>
-                {option.label}
-              </option>
-            ))}
+            {Object.entries(triggerOptions).map(
+              ([value, option]) => (
+                <option key={value} value={value}>
+                  {option.label}
+                </option>
+              )
+            )}
           </select>
         </div>
       </div>
