@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { WizardSteps } from './WizardSteps';
 import { TriggerStep } from './TriggerStep';
 import { ConditionsStep } from './ConditionsStep';
+import { ActionsStep } from './ActionsStep';
 import { triggerOptions } from '../config/ruleOptions';
 
 import type { WizardStep } from './WizardSteps';
@@ -12,6 +13,7 @@ import type {
   Trigger,
   Condition,
   ConditionLogic,
+  RuleAction,
 } from '../types/rule';
 
 type RuleEditorProps = {
@@ -20,6 +22,39 @@ type RuleEditorProps = {
 };
 
 type MoveDirection = 'up' | 'down';
+type ActionType = RuleAction['type'];
+
+function createAction(
+  actionType: ActionType,
+  actionId: string = crypto.randomUUID()
+): RuleAction {
+  switch (actionType) {
+    case 'email':
+      return {
+        id: actionId,
+        type: 'email',
+        recipient: '',
+        subject: '',
+        body: '',
+      };
+
+    case 'sms':
+      return {
+        id: actionId,
+        type: 'sms',
+        phoneNumber: '',
+        message: '',
+      };
+
+    case 'webhook':
+      return {
+        id: actionId,
+        type: 'webhook',
+        url: '',
+        method: 'POST',
+      };
+  }
+}
 
 export function RuleEditor({ rule, onBack }: RuleEditorProps) {
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
@@ -34,6 +69,8 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
 
   const [conditionLogic, setConditionLogic] =
     useState<ConditionLogic>('AND');
+
+  const [actions, setActions] = useState<RuleAction[]>([]);
 
   const changeTrigger = (newTrigger: Trigger) => {
     if (newTrigger === trigger) {
@@ -134,6 +171,47 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
     });
   };
 
+  const addAction = () => {
+    const newAction = createAction('email');
+
+    setActions((currentActions) => [
+      ...currentActions,
+      newAction,
+    ]);
+  };
+
+  const removeAction = (actionId: string) => {
+    setActions((currentActions) =>
+      currentActions.filter(
+        (action) => action.id !== actionId
+      )
+    );
+  };
+
+  const changeActionType = (
+    actionId: string,
+    actionType: ActionType
+  ) => {
+    setActions((currentActions) =>
+      currentActions.map((action) =>
+        action.id === actionId && action.type !== actionType
+          ? createAction(actionType, action.id)
+          : action
+      )
+    );
+  };
+
+  const updateAction = (updatedAction: RuleAction) => {
+    setActions((currentActions) =>
+      currentActions.map((action) =>
+        action.id === updatedAction.id &&
+        action.type === updatedAction.type
+          ? updatedAction
+          : action
+      )
+    );
+  };
+
   const goToNextStep = () => {
     setCurrentStep((step) => (step === 1 ? 2 : 3));
   };
@@ -193,15 +271,13 @@ export function RuleEditor({ rule, onBack }: RuleEditorProps) {
             )}
 
             {currentStep === 3 && (
-              <div>
-                <h2 className="text-lg font-semibold">
-                  Paso 3 — Acciones
-                </h2>
-
-                <p className="mt-3 text-sm text-slate-500">
-                  Aquí configuraremos las acciones de notificación.
-                </p>
-              </div>
+              <ActionsStep
+                actions={actions}
+                onAddAction={addAction}
+                onRemoveAction={removeAction}
+                onActionTypeChange={changeActionType}
+                onActionChange={updateAction}
+              />
             )}
           </div>
 
