@@ -1,40 +1,20 @@
-import { useState } from 'react';
 import { triggerOptions } from '../config/ruleOptions';
 import type { RuleSummary } from '../types/rule';
 
-const initialRules: RuleSummary[] = [
-  {
-    id: '1',
-    name: 'Bienvenida',
-    trigger: 'customer_created',
-    isActive: true,
-  },
-  {
-    id: '2',
-    name: 'Confirmar pago',
-    trigger: 'payment_received',
-    isActive: true,
-  },
-  {
-    id: '3',
-    name: 'Ticket pendiente',
-    trigger: 'ticket_unanswered',
-    isActive: false,
-  },
-];
+type RulesTableProps = {
+  rules: RuleSummary[];
+  onToggleRuleStatus: (ruleId: string) => void;
+  onCreateRule: () => void;
+  onEditRule: (rule: RuleSummary) => void;
+};
 
-export function RulesTable() {
-  const [rules, setRules] = useState<RuleSummary[]>(initialRules);
-
-  const toggleRuleStatus = (ruleId: string) => {
-    setRules((currentRules) =>
-      currentRules.map((rule) =>
-        rule.id === ruleId
-          ? { ...rule, isActive: !rule.isActive }
-          : rule
-      )
-    );
-  };
+export function RulesTable({
+  rules,
+  onToggleRuleStatus,
+  onCreateRule,
+  onEditRule,
+}: RulesTableProps) {
+  const hasRules = rules.length > 0;
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-800 sm:px-6">
@@ -53,67 +33,127 @@ export function RulesTable() {
           aria-labelledby="rules-title"
           className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
         >
-          <div className="mb-6">
-            <h2
-              id="rules-title"
-              className="text-lg font-semibold"
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 id="rules-title" className="text-lg font-semibold">
+                Listado de reglas
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Administra las reglas disponibles.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onCreateRule}
+              className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             >
-              Listado de reglas
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Activa o desactiva las reglas disponibles.
-            </p>
+              + Nueva regla
+            </button>
           </div>
 
-          <table className="w-full text-left text-sm">
-            <thead className="hidden bg-slate-50 text-slate-600 md:table-header-group">
-              <tr>
-                <th scope="col" className="rounded-l-lg px-4 py-3 font-medium">
-                  Nombre
-                </th>
-                <th scope="col" className="px-4 py-3 font-medium">
-                  Disparador
-                </th>
-                <th scope="col" className="rounded-r-lg px-4 py-3 font-medium">
-                  Estado
-                </th>
-              </tr>
-            </thead>
+          {!hasRules ? (
+            <div className="rounded-lg border border-dashed border-slate-300 px-4 py-12 text-center">
+              <h3 className="text-base font-semibold">
+                Todavía no hay reglas
+              </h3>
 
-            <tbody className="block space-y-3 md:table-row-group md:space-y-0">
-              {rules.map((rule) => (
-                <tr
-                  key={rule.id}
-                  className="block rounded-lg border border-slate-200 p-4 md:table-row md:rounded-none md:border-0 md:p-0"
-                >
-                  <td className="block font-medium md:table-cell md:border-b md:border-slate-100 md:px-4 md:py-4">
-                    {rule.name}
-                  </td>
+              <p className="mt-2 text-sm text-slate-500">
+                Crea tu primera regla de notificación.
+              </p>
 
-                  <td className="mt-1 block text-slate-500 md:mt-0 md:table-cell md:border-b md:border-slate-100 md:px-4 md:py-4">
-                    {triggerOptions[rule.trigger].label}
-                  </td>
+              <button
+                type="button"
+                onClick={onCreateRule}
+                className="mt-5 cursor-pointer rounded-lg border border-blue-200 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+              >
+                Crear primera regla
+              </button>
+            </div>
+          ) : (
+            <table className="w-full text-left text-sm md:table-fixed">
+              <caption className="sr-only">
+                Listado de reglas de notificación
+              </caption>
 
-                  <td className="mt-3 block md:mt-0 md:table-cell md:border-b md:border-slate-100 md:px-4 md:py-4">
-                    <label className="inline-flex cursor-pointer items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={rule.isActive}
-                        onChange={() => toggleRuleStatus(rule.id)}
-                        className="h-4 w-4 cursor-pointer accent-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500"
-                      />
-                      <span className={rule.isActive ? 'text-slate-700' : 'text-slate-400'}>
-                        {rule.isActive ? 'Activa' : 'Inactiva'}
-                      </span>
-                      <span className="sr-only">
-                        : {rule.name}
-                      </span>
-                    </label>
-                  </td>
+              <colgroup className="hidden md:table-column-group">
+                <col className="w-[30%]" />
+                <col className="w-[32%]" />
+                <col className="w-[22%]" />
+                <col className="w-[16%]" />
+              </colgroup>
+
+              <thead className="hidden bg-slate-50 text-slate-600 md:table-header-group">
+                <tr>
+                  <th scope="col" className="rounded-l-lg px-4 py-3 font-medium">
+                    Nombre
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Disparador
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Estado
+                  </th>
+                  <th scope="col" className="rounded-r-lg px-4 py-3 font-medium">
+                    Acciones
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody className="block space-y-3 md:table-row-group md:space-y-0">
+                {rules.map((rule) => (
+                  <tr
+                    key={rule.id}
+                    className="block rounded-lg border border-slate-200 p-4 md:table-row md:rounded-none md:border-0 md:p-0"
+                  >
+                    <td className="block font-medium wrap-break-word md:table-cell md:border-b md:border-slate-100 md:px-4 md:py-4">
+                      {rule.name}
+                    </td>
+
+                    <td className="mt-1 block text-slate-500 md:mt-0 md:table-cell md:border-b md:border-slate-100 md:px-4 md:py-4">
+                      {triggerOptions[rule.trigger].label}
+                    </td>
+
+                    <td className="mt-3 block md:mt-0 md:table-cell md:border-b md:border-slate-100 md:px-4 md:py-4">
+                      <label className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={rule.isActive}
+                          onChange={() => onToggleRuleStatus(rule.id)}
+                          className="h-4 w-4 shrink-0 cursor-pointer accent-blue-600"
+                        />
+
+                        <span
+                          className={`inline-block min-w-16 ${
+                            rule.isActive
+                              ? 'text-slate-700'
+                              : 'text-slate-400'
+                          }`}
+                        >
+                          {rule.isActive ? 'Activa' : 'Inactiva'}
+                        </span>
+
+                        <span className="sr-only">
+                          : {rule.name}
+                        </span>
+                      </label>
+                    </td>
+
+                    <td className="mt-3 block md:mt-0 md:table-cell md:border-b md:border-slate-100 md:px-4 md:py-4">
+                      <button
+                        type="button"
+                        onClick={() => onEditRule(rule)}
+                        className="cursor-pointer text-sm font-medium text-blue-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                      >
+                        Editar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </section>
       </div>
     </main>
