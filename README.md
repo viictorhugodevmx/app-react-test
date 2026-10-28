@@ -1,56 +1,46 @@
 # Notification Rules Builder
 
-Aplicación web para crear, editar y administrar reglas de
-notificación configurables, integrada con una API REST y
-persistencia en PostgreSQL.
+Aplicación full stack para crear, editar y administrar
+reglas de notificación configurables.
 
-## Tecnologías
+## Demo pública
 
-### Frontend
-- React 19
-- TypeScript 6
-- Vite 8
-- Tailwind CSS 4
-- Fetch API
+**Aplicación:**
+https://notification-rules-demo.netlify.app
 
-### Backend
-- Node.js 22.19.0
-- Express
-- TypeScript
-- PostgreSQL 17
-- node-postgres (pg)
+**API:**
+https://notification-rules-backend.onrender.com/api
 
-El backend se mantiene en un repositorio independiente.
+**Estado:** Desplegada y validada funcionalmente.
 
-## Funcionalidades implementadas
+## Arquitectura
 
-- Listado de reglas recuperadas desde PostgreSQL.
-- Creación de reglas mediante un wizard de tres pasos.
+| Capa | Tecnología | Hosting |
+|---|---|---|
+| Frontend | React 19, TypeScript 6, Vite 8, Tailwind CSS 4 | Netlify |
+| Backend | Node.js 22.19.0, Express, TypeScript | Render |
+| Base de datos | PostgreSQL 18 | Neon |
+
+Repositorio del backend:
+https://github.com/viictorhugodevmx/notification-rules-backend
+
+## Funcionalidades
+
+- Listado persistente de reglas.
+- Wizard de creación en tres pasos.
 - Edición de reglas existentes.
 - Activación y desactivación persistente.
-- Tres disparadores:
-  - Cliente creado.
-  - Pago recibido.
-  - Ticket sin respuesta.
-- Condiciones dinámicas con operadores compatibles.
-- Combinación de condiciones mediante AND u OR.
-- Acciones configurables:
-  - Email.
-  - SMS.
-  - Webhook.
-- Validación de nombres, condiciones y acciones.
-- Detección de nombres duplicados (HTTP 409).
-- Manejo de errores de API y conexión.
-- Estados de carga y notificaciones visuales.
-- Diseño responsive.
+- Disparadores: cliente creado, pago recibido y ticket sin respuesta.
+- Condiciones dinámicas con lógica AND/OR.
+- Acciones configurables de Email, SMS y Webhook.
+- Validaciones de formularios.
+- Errores HTTP, incluyendo conflictos de nombres (409).
+- Notificaciones visuales y estados de carga.
+- Interfaz responsive.
 
-## Requisitos
+## Desarrollo local
 
-- Node.js 22.19.0 y npm.
-- Backend Notification Rules en ejecución.
-- PostgreSQL configurado para el backend.
-
-## Instalación del frontend
+Requisitos: Node.js 22.19.0, npm y backend configurado.
 
 ```bash
 npm install
@@ -63,87 +53,61 @@ Configurar `.env.local`:
 VITE_API_BASE_URL=http://localhost:3001/api
 ```
 
-Iniciar el frontend:
+Iniciar:
 
 ```bash
 npm run dev
 ```
 
-Abrir:
+Frontend local: http://localhost:5173
 
-http://localhost:5173
+El archivo `.env.local` no se versiona.
 
-El archivo `.env.local` es local y no debe subirse a Git.
+## Despliegue
 
-## Configuración del backend
+El frontend se despliega desde la rama `main` mediante Netlify.
 
-El backend utiliza su propio proyecto y archivo `.env`.
+Configuración:
 
-Consultar su README y los documentos:
+- Build command: `npm run build`
+- Publish directory: `dist`
+- Variable: `VITE_API_BASE_URL`
+- Valor: `https://notification-rules-backend.onrender.com/api`
 
-- `docs/API_CONTRACT.md`
-- `docs/DATABASE.md`
+Vite incorpora las variables VITE_* durante la compilación.
+Si cambia su valor, es necesario reconstruir el sitio.
 
-Es necesario configurar PostgreSQL y aplicar el esquema SQL
-antes de utilizar la API.
+El backend está publicado en Render con CORS configurado
+para permitir el dominio de Netlify.
 
-Iniciar el backend desde su propio directorio:
+PostgreSQL está alojado en Neon y conserva los datos
+independientemente del navegador.
 
-```bash
-npm run dev
-```
+## API REST
 
-API local:
-
-http://localhost:3001/api
-
-## Flujo de funcionamiento
-
-1. React solicita las reglas al backend mediante HTTP.
-2. Express procesa y valida cada solicitud.
-3. PostgreSQL almacena reglas, condiciones y acciones.
-4. La API devuelve el resultado confirmado.
-5. React actualiza la interfaz.
-
-Los datos persisten al recargar el navegador y al reiniciar
-el servidor.
-
-## Endpoints utilizados
-
-| Método | Endpoint | Propósito |
+| Método | Ruta | Operación |
 |---|---|---|
 | GET | /api/rules | Listar reglas |
-| GET | /api/rules/:ruleId | Obtener regla completa |
+| GET | /api/rules/:ruleId | Obtener regla |
 | POST | /api/rules | Crear regla |
 | PUT | /api/rules/:ruleId | Editar regla |
 | PATCH | /api/rules/:ruleId/status | Cambiar estado |
 
-El identificador UUID principal se genera en el backend.
+La API genera los UUID de las reglas.
 
-## Validaciones y errores
+## Pruebas realizadas
 
-El frontend valida los campos del formulario antes de guardar.
+- Creación de reglas en producción.
+- Edición con persistencia después de F5.
+- Activación y desactivación persistente.
+- Recuperación de condiciones y acciones.
+- Rechazo de nombres duplicados con HTTP 409.
+- Comunicación React, Express y PostgreSQL.
+- Verificación de respuestas HTTP y CORS.
+- Pruebas manuales de interfaz.
+- Compilación de TypeScript y Vite.
 
-El backend aplica sus propias reglas de negocio y devuelve
-errores HTTP estructurados.
-
-Ejemplos:
-
-- 409: nombre duplicado.
-- 422: datos de regla inválidos.
-- 404: regla inexistente.
-- Errores de red: conexión no disponible.
-
-Una solicitud fallida no debe mostrar un guardado exitoso.
-
-## Notificaciones
-
-- Éxito: notificación flotante que desaparece en 4 segundos.
-- Error: notificación que puede cerrarse manualmente.
-- Carga: indicador mientras se procesa la solicitud.
-- Validación: mensajes junto a los campos del wizard.
-
-## Comandos del frontend
+## Comandos
 
 ```bash
 npm run dev
@@ -152,46 +116,25 @@ npm run build
 npm run preview
 ```
 
-## Validación
+## Alcance y limitaciones
 
-Frontend:
+- Las acciones Email, SMS y Webhook se configuran y
+  almacenan, pero no realizan envíos reales.
+- No existe autenticación ni autorización.
+- La API pública permite operaciones de modificación;
+  usar exclusivamente datos ficticios de demostración.
+- No hay pruebas frontend automatizadas.
+- El alojamiento gratuito de Render puede suspender
+  el backend por inactividad y demorar la primera petición.
 
-```bash
-npm run lint
-npm run build
-git diff --check
-```
-
-Backend, desde su propio directorio:
-
-```bash
-npm run typecheck
-npm run build
-npm test
-```
-
-Las pruebas automáticas del backend utilizan una base de
-datos de pruebas independiente.
-
-Las pruebas funcionales del frontend se realizan manualmente
-en el navegador.
-
-## Limitaciones actuales
-
-- Las acciones Email, SMS y Webhook se configuran y almacenan,
-  pero no se ejecutan ni envían notificaciones reales.
-- El proyecto no incluye autenticación.
-- No hay una suite automatizada de pruebas del frontend.
-- El despliegue de producción no forma parte de esta etapa.
+Esta implementación es una demostración técnica y no
+un servicio preparado para datos sensibles.
 
 ## Estructura principal
 
 ```text
 src/
 ├── components/
-│   ├── RulesTable.tsx
-│   ├── RuleEditor.tsx
-│   └── NotificationToast.tsx
 ├── config/
 ├── services/
 │   └── rulesApi.ts
@@ -202,5 +145,4 @@ src/
 
 ## Documentación
 
-La versión en inglés está disponible en
-[README.en.md](README.en.md).
+English version: [README.en.md](README.en.md).

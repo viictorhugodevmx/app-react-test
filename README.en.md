@@ -1,55 +1,46 @@
 # Notification Rules Builder
 
-A web application for creating, editing, and managing
-configurable notification rules, integrated with a REST API
-and PostgreSQL persistence.
+A full-stack application for creating, editing, and
+managing configurable notification rules.
 
-## Tech Stack
+## Live Demo
 
-### Frontend
-- React 19
-- TypeScript 6
-- Vite 8
-- Tailwind CSS 4
-- Fetch API
+**Application:**
+https://notification-rules-demo.netlify.app
 
-### Backend
-- Node.js 22.19.0
-- Express
-- TypeScript
-- PostgreSQL 17
-- node-postgres (pg)
+**API:**
+https://notification-rules-backend.onrender.com/api
 
-The backend is maintained in a separate repository.
+**Status:** Deployed and functionally verified.
 
-## Implemented Features
+## Architecture
 
-- Rule listing backed by PostgreSQL.
+| Layer | Technology | Hosting |
+|---|---|---|
+| Frontend | React 19, TypeScript 6, Vite 8, Tailwind CSS 4 | Netlify |
+| Backend | Node.js 22.19.0, Express, TypeScript | Render |
+| Database | PostgreSQL 18 | Neon |
+
+Backend repository:
+https://github.com/viictorhugodevmx/notification-rules-backend
+
+## Features
+
+- Persistent rule listing.
 - Three-step rule creation wizard.
 - Editing existing rules.
-- Persistent rule activation and deactivation.
-- Three triggers:
-  - Customer created.
-  - Payment received.
-  - Ticket unanswered.
-- Dynamic conditions with compatible operators.
-- AND/OR condition logic.
+- Persistent activation and deactivation.
+- Customer, payment, and unanswered-ticket triggers.
+- Dynamic conditions with AND/OR logic.
 - Configurable Email, SMS, and Webhook actions.
-- Form and business-rule validation.
-- Duplicate-name handling (HTTP 409).
-- API and network error handling.
-- Loading indicators and toast notifications.
+- Form validation.
+- HTTP error handling, including duplicate names (409).
+- Toast notifications and loading states.
 - Responsive interface.
 
-## Requirements
+## Local Development
 
-- Node.js 22.19.0 and npm.
-- A running Notification Rules backend.
-- PostgreSQL configured for the backend.
-
-## Frontend Setup
-
-Install dependencies and create a local configuration:
+Requirements: Node.js 22.19.0, npm, and a configured backend.
 
 ```bash
 npm install
@@ -62,86 +53,61 @@ Configure `.env.local`:
 VITE_API_BASE_URL=http://localhost:3001/api
 ```
 
-Start the development server:
+Start:
 
 ```bash
 npm run dev
 ```
 
-Open:
+Local frontend: http://localhost:5173
 
-http://localhost:5173
+Do not commit `.env.local`.
 
-The `.env.local` file must remain outside version control.
+## Deployment
 
-## Backend Setup
+The frontend is deployed from the `main` branch using Netlify.
 
-The backend has its own project and `.env` file.
+Configuration:
 
-Refer to its README and documentation:
+- Build command: `npm run build`
+- Publish directory: `dist`
+- Variable: `VITE_API_BASE_URL`
+- Value: `https://notification-rules-backend.onrender.com/api`
 
-- `docs/API_CONTRACT.md`
-- `docs/DATABASE.md`
+Vite embeds VITE_* variables at build time.
+Changes to these values require a new build.
 
-PostgreSQL must be configured and the database schema must
-be applied before starting the API.
+The backend runs on Render with CORS configured
+to allow the Netlify application origin.
 
-From the backend directory:
+PostgreSQL is hosted on Neon and persists data
+independently of browser sessions.
 
-```bash
-npm run dev
-```
+## REST API
 
-Local API:
-
-http://localhost:3001/api
-
-## Application Flow
-
-1. React sends HTTP requests to Express.
-2. Express validates and processes the requests.
-3. PostgreSQL stores rules, conditions, and actions.
-4. The API returns the confirmed result.
-5. React updates the interface.
-
-Data persists across browser refreshes and backend restarts.
-
-## API Endpoints
-
-| Method | Endpoint | Purpose |
+| Method | Route | Operation |
 |---|---|---|
 | GET | /api/rules | List rules |
-| GET | /api/rules/:ruleId | Fetch a complete rule |
-| POST | /api/rules | Create a rule |
-| PUT | /api/rules/:ruleId | Update a rule |
-| PATCH | /api/rules/:ruleId/status | Change rule status |
+| GET | /api/rules/:ruleId | Fetch rule |
+| POST | /api/rules | Create rule |
+| PUT | /api/rules/:ruleId | Update rule |
+| PATCH | /api/rules/:ruleId/status | Change status |
 
-The backend generates each rule's primary UUID.
+The backend generates rule UUIDs.
 
-## Validation and Error Handling
+## Verification Performed
 
-The frontend validates form fields before submission.
+- Rule creation in the deployed application.
+- Editing with persistence after browser refresh.
+- Persistent activation and deactivation.
+- Retrieval of conditions and actions.
+- HTTP 409 rejection of duplicate names.
+- React, Express, and PostgreSQL integration.
+- HTTP response and CORS verification.
+- Manual UI testing.
+- TypeScript and Vite compilation.
 
-The backend independently enforces business rules and
-returns structured HTTP errors.
-
-Examples:
-
-- 409: duplicate rule name.
-- 422: invalid rule data.
-- 404: rule not found.
-- Network errors: unavailable connection.
-
-Failed requests must not appear as successful saves.
-
-## Notifications
-
-- Success: floating toast dismissed after 4 seconds.
-- Error: dismissible notification.
-- Loading: indicator during pending operations.
-- Validation: field-level wizard messages.
-
-## Frontend Commands
+## Commands
 
 ```bash
 npm run dev
@@ -150,45 +116,25 @@ npm run build
 npm run preview
 ```
 
-## Verification
+## Scope and Limitations
 
-Frontend:
+- Email, SMS, and Webhook actions are configured and
+  stored, but are not actually dispatched.
+- Authentication and authorization are not implemented.
+- The public API permits write operations;
+  use fictional demonstration data only.
+- Automated frontend tests are not implemented.
+- Render's free hosting may spin down after inactivity,
+  delaying the first API request.
 
-```bash
-npm run lint
-npm run build
-git diff --check
-```
+This project is a technical demonstration and is not
+intended to process sensitive data.
 
-Backend, from its own directory:
-
-```bash
-npm run typecheck
-npm run build
-npm test
-```
-
-Automated backend tests use a separate test database.
-
-Frontend functional testing is currently performed manually
-in the browser.
-
-## Current Limitations
-
-- Email, SMS, and Webhook actions are configured and stored,
-  but no actual notifications are dispatched.
-- Authentication is not implemented.
-- Automated frontend tests are not yet available.
-- Production deployment is outside this stage.
-
-## Main Project Structure
+## Main Structure
 
 ```text
 src/
 ├── components/
-│   ├── RulesTable.tsx
-│   ├── RuleEditor.tsx
-│   └── NotificationToast.tsx
 ├── config/
 ├── services/
 │   └── rulesApi.ts
@@ -199,5 +145,4 @@ src/
 
 ## Documentation
 
-The Spanish version is available in
-[README.md](README.md).
+Spanish version: [README.md](README.md).
