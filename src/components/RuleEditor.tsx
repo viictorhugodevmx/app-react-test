@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { WizardSteps } from './WizardSteps';
 import { TriggerStep } from './TriggerStep';
@@ -6,6 +6,9 @@ import { ConditionsStep } from './ConditionsStep';
 import { ActionsStep } from './ActionsStep';
 
 import { triggerOptions } from '../config/ruleOptions';
+import { ApiError } from '../services/rulesApi';
+
+import type { RuleInput } from '../services/rulesApi';
 
 import {
   validateRuleName,
@@ -31,7 +34,7 @@ import type {
 type RuleEditorProps = {
   rule?: Rule;
   onBack: () => void;
-  onSave: (updatedRule: Rule) => string | null;
+  onSave: (input: RuleInput) => Promise<void>;
 };
 
 type MoveDirection = 'up' | 'down';
@@ -69,6 +72,16 @@ function createAction(
   }
 }
 
+function getSaveErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.details.length > 0
+      ? `${error.message} ${error.details.join(' ')}`
+      : error.message;
+  }
+
+  return 'No fue posible guardar la regla. Verifica la conexión con el servidor.';
+}
+
 export function RuleEditor({
   rule,
   onBack,
@@ -77,9 +90,9 @@ export function RuleEditor({
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
 
   const [name, setName] = useState(rule?.name ?? '');
-
-  const [nameError, setNameError] =
-    useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(
+    null
+  );
 
   const [trigger, setTrigger] = useState<Trigger>(
     rule?.trigger ?? 'customer_created'
@@ -116,6 +129,13 @@ export function RuleEditor({
   const [isActionsValidated, setIsActionsValidated] =
     useState(false);
 
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(
+    null
+  );
+
+  const saveRequestInProgress = useRef(false);
+
   const clearConditionError = (conditionId: string) => {
     setConditionErrors((currentErrors) => {
       const nextErrors = { ...currentErrors };
@@ -137,6 +157,7 @@ export function RuleEditor({
   const changeName = (newName: string) => {
     setName(newName);
     setNameError(null);
+    setSaveError(null);
   };
 
   const changeTrigger = (newTrigger: Trigger) => {
@@ -158,6 +179,7 @@ export function RuleEditor({
     setConditions([]);
     setConditionErrors({});
     setConditionLogic('AND');
+    setSaveError(null);
   };
 
   const addCondition = () => {
@@ -172,6 +194,8 @@ export function RuleEditor({
       ...currentConditions,
       newCondition,
     ]);
+
+    setSaveError(null);
   };
 
   const removeCondition = (conditionId: string) => {
@@ -182,6 +206,7 @@ export function RuleEditor({
     );
 
     clearConditionError(conditionId);
+    setSaveError(null);
   };
 
   const updateCondition = (
@@ -197,6 +222,7 @@ export function RuleEditor({
     );
 
     clearConditionError(conditionId);
+    setSaveError(null);
   };
 
   const moveCondition = (
@@ -251,6 +277,7 @@ export function RuleEditor({
 
     setActionsError(null);
     setIsActionsValidated(false);
+    setSaveError(null);
   };
 
   const removeAction = (actionId: string) => {
@@ -262,6 +289,7 @@ export function RuleEditor({
 
     clearActionError(actionId);
     setActionsError(null);
+    setSaveError(null);
   };
 
   const changeActionType = (
@@ -277,6 +305,7 @@ export function RuleEditor({
     );
 
     clearActionError(actionId);
+    setSaveError(null);
   };
 
   const updateAction = (updatedAction: RuleAction) => {
@@ -290,6 +319,7 @@ export function RuleEditor({
     );
 
     clearActionError(updatedAction.id);
+    setSaveError(null);
   };
 
   const validateActionDraft = (): boolean => {
@@ -308,6 +338,10 @@ export function RuleEditor({
   };
 
   const changeWizardStep = (nextStep: WizardStep) => {
+    if (isSaving) {
+      return;
+    }
+
     if (nextStep > 1) {
       const validationError = validateRuleName(name);
 
@@ -349,7 +383,13 @@ export function RuleEditor({
     changeWizardStep(previousStep);
   };
 
-  const saveRule = () => {
+  const saveRule = async () => {
+    if (saveRequestInProgress.current) {
+      return;
+    }
+
+    setSaveError(null);
+
     const validationError = validateRuleName(name);
 
     setNameError(validationError);
@@ -376,11 +416,9 @@ export function RuleEditor({
       return;
     }
 
-    const updatedRule: Rule = {
-      id: rule?.id ?? crypto.randomUUID(),
+    const input: RuleInput = {
       name: name.trim(),
       trigger,
-      isActive: rule?.isActive ?? true,
       conditionLogic,
       conditions: conditions.map((condition) => ({
         ...condition,
@@ -390,11 +428,25 @@ export function RuleEditor({
       })),
     };
 
-    const saveError = onSave(updatedRule);
+    saveRequestInProgress.current = true;
+    setIsSaving(true);
 
-    if (saveError) {
-      setNameError(saveError);
-      setCurrentStep(1);
+    try {
+      await onSave(input);
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        error.status === 409 &&
+        error.code === 'DUPLICATE_RULE_NAME'
+      ) {
+        setNameError(error.message);
+        setCurrentStep(1);
+      } else {
+        setSaveError(getSaveErrorMessage(error));
+      }
+    } finally {
+      saveRequestInProgress.current = false;
+      setIsSaving(false);
     }
   };
 
@@ -405,7 +457,8 @@ export function RuleEditor({
           <button
             type="button"
             onClick={onBack}
-            className="mb-4 cursor-pointer text-sm text-blue-600 hover:underline"
+            disabled={isSaving}
+            className="mb-4 cursor-pointer text-sm text-blue-600 hover:underline disabled:cursor-not-allowed disabled:opacity-40"
           >
             ← Volver al listado
           </button>
@@ -464,11 +517,20 @@ export function RuleEditor({
             )}
           </div>
 
+          {saveError && (
+            <p
+              role="alert"
+              className="mt-5 text-sm text-red-700"
+            >
+              {saveError}
+            </p>
+          )}
+
           <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
             <button
               type="button"
               onClick={goToPreviousStep}
-              disabled={currentStep === 1}
+              disabled={currentStep === 1 || isSaving}
               className="cursor-pointer rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Anterior
@@ -479,24 +541,27 @@ export function RuleEditor({
                 <button
                   type="button"
                   onClick={validateActionDraft}
-                  className="cursor-pointer rounded-lg border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                  disabled={isSaving}
+                  className="cursor-pointer rounded-lg border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Validar acciones
                 </button>
 
                 <button
                   type="button"
-                  onClick={saveRule}
-                  className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  onClick={() => void saveRule()}
+                  disabled={isSaving}
+                  className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Guardar regla
+                  {isSaving ? 'Guardando...' : 'Guardar regla'}
                 </button>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={goToNextStep}
-                className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                disabled={isSaving}
+                className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Siguiente
               </button>

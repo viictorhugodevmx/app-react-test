@@ -1,11 +1,13 @@
 import { triggerOptions } from '../config/ruleOptions';
+
 import type { RuleSummary } from '../types/rule';
 
 type RulesTableProps = {
   rules: RuleSummary[];
   onToggleRuleStatus: (ruleId: string) => void;
-  onCreateRule: () => void;
-  onEditRule: (rule: RuleSummary) => void;
+  onCreateRule?: () => void;
+  onEditRule?: (rule: RuleSummary) => void;
+  updatingRuleId?: string | null;
 };
 
 export function RulesTable({
@@ -13,8 +15,10 @@ export function RulesTable({
   onToggleRuleStatus,
   onCreateRule,
   onEditRule,
+  updatingRuleId = null,
 }: RulesTableProps) {
   const hasRules = rules.length > 0;
+  const isUpdatingStatus = updatingRuleId !== null;
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-800 sm:px-6">
@@ -35,19 +39,30 @@ export function RulesTable({
         >
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 id="rules-title" className="text-lg font-semibold">
+              <h2
+                id="rules-title"
+                className="text-lg font-semibold"
+              >
                 Listado de reglas
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
                 Administra las reglas disponibles.
               </p>
+
+              {!onCreateRule && (
+                <p className="mt-2 text-xs text-slate-500">
+                  La creación y edición se conectarán en el
+                  Punto 10.3.
+                </p>
+              )}
             </div>
 
             <button
               type="button"
               onClick={onCreateRule}
-              className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+              disabled={!onCreateRule}
+              className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
             >
               + Nueva regla
             </button>
@@ -60,13 +75,14 @@ export function RulesTable({
               </h3>
 
               <p className="mt-2 text-sm text-slate-500">
-                Crea tu primera regla de notificación.
+                No hay reglas registradas en el servidor.
               </p>
 
               <button
                 type="button"
                 onClick={onCreateRule}
-                className="mt-5 cursor-pointer rounded-lg border border-blue-200 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                disabled={!onCreateRule}
+                className="mt-5 cursor-pointer rounded-lg border border-blue-200 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Crear primera regla
               </button>
@@ -86,16 +102,31 @@ export function RulesTable({
 
               <thead className="hidden bg-slate-50 text-slate-600 md:table-header-group">
                 <tr>
-                  <th scope="col" className="rounded-l-lg px-4 py-3 font-medium">
+                  <th
+                    scope="col"
+                    className="rounded-l-lg px-4 py-3 font-medium"
+                  >
                     Nombre
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+
+                  <th
+                    scope="col"
+                    className="px-4 py-3 font-medium"
+                  >
                     Disparador
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+
+                  <th
+                    scope="col"
+                    className="px-4 py-3 font-medium"
+                  >
                     Estado
                   </th>
-                  <th scope="col" className="rounded-r-lg px-4 py-3 font-medium">
+
+                  <th
+                    scope="col"
+                    className="rounded-r-lg px-4 py-3 font-medium"
+                  >
                     Acciones
                   </th>
                 </tr>
@@ -120,8 +151,11 @@ export function RulesTable({
                         <input
                           type="checkbox"
                           checked={rule.isActive}
-                          onChange={() => onToggleRuleStatus(rule.id)}
-                          className="h-4 w-4 shrink-0 cursor-pointer accent-blue-600"
+                          disabled={isUpdatingStatus}
+                          onChange={() =>
+                            onToggleRuleStatus(rule.id)
+                          }
+                          className="h-4 w-4 shrink-0 cursor-pointer accent-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
                         />
 
                         <span
@@ -143,8 +177,9 @@ export function RulesTable({
                     <td className="mt-3 block md:mt-0 md:table-cell md:border-b md:border-slate-100 md:px-4 md:py-4">
                       <button
                         type="button"
-                        onClick={() => onEditRule(rule)}
-                        className="cursor-pointer text-sm font-medium text-blue-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                        onClick={() => onEditRule?.(rule)}
+                        disabled={!onEditRule}
+                        className="cursor-pointer text-sm font-medium text-blue-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline"
                       >
                         Editar
                       </button>
